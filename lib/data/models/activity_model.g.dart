@@ -1,50 +1,44 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'user_model.dart';
+part of 'activity_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class UserModelAdapter extends TypeAdapter<UserModel> {
+class ActivityModelAdapter extends TypeAdapter<ActivityModel> {
   @override
-  final int typeId = 1;
+  final int typeId = 3;
 
   @override
-  UserModel read(BinaryReader reader) {
+  ActivityModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return UserModel(
+    return ActivityModel(
       id: fields[0] as String,
-      name: fields[1] as String,
-      email: fields[2] as String,
-      password: fields[3] as String,
-      role: fields[4] as String,
-      createdAt: fields[5] as DateTime,
-      isDeleted: fields[6] as bool,
+      userId: fields[1] as String,
+      action: fields[2] as String,
+      taskTitle: fields[3] as String,
+      time: fields[4] as DateTime,
     );
   }
 
   @override
-  void write(BinaryWriter writer, UserModel obj) {
+  void write(BinaryWriter writer, ActivityModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.name)
+      ..write(obj.userId)
       ..writeByte(2)
-      ..write(obj.email)
+      ..write(obj.action)
       ..writeByte(3)
-      ..write(obj.password)
+      ..write(obj.taskTitle)
       ..writeByte(4)
-      ..write(obj.role)
-      ..writeByte(5)
-      ..write(obj.createdAt)
-      ..writeByte(6)
-      ..write(obj.isDeleted);
+      ..write(obj.time);
   }
 
   @override
@@ -53,7 +47,7 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserModelAdapter &&
+      other is ActivityModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

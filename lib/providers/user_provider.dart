@@ -7,7 +7,13 @@ import '../data/models/user_model.dart';
 class UserProvider extends ChangeNotifier {
   final box = Hive.box<UserModel>('users');
 
-  List<UserModel> get users => box.values.toList();
+  // ✅ ACTIVE USERS ONLY
+  List<UserModel> get users =>
+      box.values.where((u) => u.isDeleted == false).toList();
+
+  // ♻️ RECYCLE BIN USERS
+  List<UserModel> get deletedUsers =>
+      box.values.where((u) => u.isDeleted == true).toList();
 
   // ➕ ADD USER
   void addUser(String name, String email, String password, String role) {
@@ -17,16 +23,31 @@ class UserProvider extends ChangeNotifier {
       email: email,
       password: password,
       role: role,
-      createdAt: DateTime.now(), // ✅ REQUIRED FIX
+      createdAt: DateTime.now(),
+      isDeleted: false, // ✅ always active
     );
 
     box.add(user);
     notifyListeners();
   }
 
-  // ❌ DELETE USER (🔥 THIS FIXES YOUR ERROR)
+  // ♻️ SOFT DELETE (MOVE TO RECYCLE BIN)
   void deleteUser(UserModel user) {
-    user.delete(); // HiveObject method
+    user.isDeleted = true;
+    user.save(); // 🔥 important for Hive
+    notifyListeners();
+  }
+
+  // 🔄 RESTORE USER
+  void restoreUser(UserModel user) {
+    user.isDeleted = false;
+    user.save();
+    notifyListeners();
+  }
+
+  // ❌ PERMANENT DELETE
+  void permanentDelete(UserModel user) {
+    user.delete(); // Hive permanent delete
     notifyListeners();
   }
 }

@@ -7,6 +7,7 @@ import '../../widgets/app_button.dart';
 import '../../widgets/app_textfield.dart';
 import '../admin/admin_dashboard.dart';
 import '../user/user_dashboard.dart';
+import 'forgot_password_screen.dart'; // ✅ ADDED
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,14 +24,28 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool isLoading = false;
 
+  // ✅ AUTO-FILL REMEMBERED USER
+  @override
+  void initState() {
+    super.initState();
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final data = auth.getRememberedUser();
+
+    emailController.text = data['email'] ?? '';
+    passwordController.text = data['password'] ?? '';
+  }
+
   void login() async {
     setState(() => isLoading = true);
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    final success = await auth.login(
+    // ✅ UPDATED LOGIN METHOD
+    final success = await auth.loginWithRemember(
       emailController.text.trim(),
       passwordController.text.trim(),
+      rememberMe,
     );
 
     setState(() => isLoading = false);
@@ -125,6 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 10),
 
+                    // ✅ REMEMBER ME + FORGOT PASSWORD
                     Row(
                       children: [
                         Checkbox(
@@ -138,7 +154,15 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Text("Remember me"),
                         const Spacer(),
                         TextButton(
-                          onPressed: () {},
+                          onPressed: () {
+                            // ✅ NAVIGATION ADDED
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ForgotPasswordScreen(),
+                              ),
+                            );
+                          },
                           child: const Text(
                             "Forgot password?",
                             style: TextStyle(color: AppColors.primary),

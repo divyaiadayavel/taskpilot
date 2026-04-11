@@ -2,7 +2,7 @@ import 'package:hive/hive.dart';
 
 part 'task_model.g.dart';
 
-@HiveType(typeId: 1)
+@HiveType(typeId: 2)
 class TaskModel extends HiveObject {
   @HiveField(0)
   String id;
@@ -19,11 +19,15 @@ class TaskModel extends HiveObject {
   @HiveField(4)
   DateTime createdAt;
 
+  @HiveField(5)
+  String? description; // ✅ ADD THIS
+
   TaskModel({
     required this.id,
     required this.title,
-    this.isDone = false,
     required this.userId,
     required this.createdAt,
+    this.isDone = false,
+    this.description,
   });
 }

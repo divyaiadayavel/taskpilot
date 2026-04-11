@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/constants/colors.dart';
-import '../../widgets/app_button.dart';
-import '../../widgets/app_textfield.dart';
 import '../../../providers/auth_provider.dart';
-
-import 'reset_password_screen.dart';
+import 'otp_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -17,48 +13,92 @@ class ForgotPasswordScreen extends StatefulWidget {
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final emailController = TextEditingController();
+  bool isLoading = false;
 
-  void sendCode() {
+  void sendOtp() async {
     final email = emailController.text.trim();
 
     if (email.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Enter email")));
+      showMessage("Enter email");
       return;
     }
 
-    // 🔥 Navigate to reset screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ResetPasswordScreen(email: email)),
-    );
+    setState(() => isLoading = true);
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final success = await auth.sendOtpEmail(email);
+
+    setState(() => isLoading = false);
+
+    if (success) {
+      showMessage("OTP sent (check console)");
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => OtpScreen(email: email)),
+      );
+    } else {
+      showMessage("Email not found");
+    }
+  }
+
+  void showMessage(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundLight,
-
-      appBar: AppBar(title: const Text("Forgot Password")),
-
+      backgroundColor: const Color(0xFFF5F7FA), // ✅ kept your design
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: const BackButton(),
+        title: const Text("Forgot Password"),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const SizedBox(height: 20),
+
             const Text(
-              "Enter your email to reset password",
-              style: TextStyle(fontSize: 16),
+              "Forgot Password?",
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 10),
+
+            const Text(
+              "Enter your email address and we'll send you a code to reset your password.",
+              textAlign: TextAlign.center,
+            ),
+
+            const SizedBox(height: 30),
+
+            TextField(
+              controller: emailController,
+              decoration: const InputDecoration(
+                hintText: "Enter your email",
+                border: OutlineInputBorder(),
+              ),
             ),
 
             const SizedBox(height: 20),
 
-            AppTextField(hint: "Enter email", controller: emailController),
+            isLoading
+                ? const CircularProgressIndicator()
+                : ElevatedButton(
+                    onPressed: sendOtp,
+                    child: const Text("Send Code"),
+                  ),
 
             const SizedBox(height: 20),
 
-            AppButton(text: "Send Code", onTap: sendCode),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Back to Login"),
+            ),
           ],
         ),
       ),

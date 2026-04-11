@@ -6,22 +6,58 @@ import '../../../core/constants/spacing.dart';
 import '../../../core/constants/text_styles.dart';
 
 import '../../widgets/stat_card.dart';
-import '../../widgets/activity_tile.dart';
 import '../../widgets/app_card.dart';
 
 import '../../../providers/task_provider.dart';
 import '../../../providers/user_provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/activity_provider.dart';
 
+import '../auth/login_screen.dart';
 import 'create_user_screen.dart';
+import 'assign_task_screen.dart';
 
-class AdminDashboard extends StatelessWidget {
+class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
 
-  // ✅ Helper to safely get first letter
-  String getInitial(String name) {
-    if (name.trim().isEmpty) return "?";
-    return name.trim()[0].toUpperCase();
+  @override
+  State<AdminDashboard> createState() => _AdminDashboardState();
+}
+
+class _AdminDashboardState extends State<AdminDashboard> {
+  int selectedIndex = 0;
+
+  /// ✅ DELETE USER CONFIRM POPUP
+  Future<void> _showDeleteUserDialog(
+    BuildContext context,
+    dynamic user,
+    UserProvider userProvider,
+  ) async {
+    final safeName = user.name.toString().trim().isEmpty
+        ? "No Name"
+        : user.name;
+
+    final confirm = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete User"),
+        content: Text("Do you want to delete $safeName?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      userProvider.deleteUser(user);
+    }
   }
 
   @override
@@ -29,293 +65,328 @@ class AdminDashboard extends StatelessWidget {
     final taskProvider = Provider.of<TaskProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final activityProvider = Provider.of<ActivityProvider>(context);
+
+    final activities = activityProvider.activities;
+    final users = userProvider.users;
 
     final total = taskProvider.totalTasks;
-    final completed = taskProvider.completedTasks;
     final pending = taskProvider.pendingTasks;
+    final completed = taskProvider.completedTasks;
     final deleted = taskProvider.deletedTasks;
-
-    final recentTasks = taskProvider.recentTasks;
-    final users = userProvider.users;
 
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
 
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const CreateUserScreen()),
-          );
-        },
-        label: const Text("+ Add User"),
-      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 6),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => selectedIndex = 0);
 
-      body: SafeArea(
-        child: Padding(
-          padding: AppSpacing.screenPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 🔥 HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    "TaskPilot",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const AssignTaskScreen()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: selectedIndex == 0
+                        ? Colors.orange
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  Row(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "Admin",
-                        style: TextStyle(fontWeight: FontWeight.w500),
+                      Icon(
+                        Icons.add,
+                        color: selectedIndex == 0 ? Colors.white : Colors.grey,
                       ),
-                      const SizedBox(width: 10),
-                      const CircleAvatar(
-                        radius: 20,
-                        backgroundImage: AssetImage(
-                          'assets/images/profile-pic.jpg',
+                      const SizedBox(width: 6),
+                      Text(
+                        "Assign Task",
+                        style: TextStyle(
+                          color: selectedIndex == 0
+                              ? Colors.white
+                              : Colors.grey,
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
+            ),
 
-              AppSpacing.h20,
+            const SizedBox(width: 10),
 
-              // 🔥 STATS
-              AppCard(
-                child: Column(
+            Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() => selectedIndex = 1);
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CreateUserScreen()),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    color: selectedIndex == 1
+                        ? Colors.orange
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.person_add,
+                        color: selectedIndex == 1 ? Colors.white : Colors.grey,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Add User",
+                        style: TextStyle(
+                          color: selectedIndex == 1
+                              ? Colors.white
+                              : Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: AppSpacing.screenPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// HEADER
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: StatCard(
-                            title: "Total Tasks",
-                            count: total,
-                            color: Colors.green,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: StatCard(
-                            title: "Pending Tasks",
-                            count: pending,
-                            color: Colors.blue,
-                          ),
-                        ),
-                      ],
+                    const Text(
+                      "TaskPilot",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    const SizedBox(height: 10),
+
                     Row(
                       children: [
-                        Expanded(
-                          child: StatCard(
-                            title: "Completed Tasks",
-                            count: completed,
-                            color: Colors.orange,
+                        const Text("Admin"),
+                        const SizedBox(width: 10),
+
+                        const CircleAvatar(
+                          radius: 20,
+                          backgroundImage: AssetImage(
+                            'assets/images/profile-pic.jpg',
                           ),
                         ),
+
                         const SizedBox(width: 10),
-                        Expanded(
-                          child: StatCard(
-                            title: "Deleted Tasks",
-                            count: deleted,
-                            color: Colors.red,
-                          ),
+
+                        IconButton(
+                          icon: const Icon(Icons.logout, color: Colors.red),
+                          onPressed: () async {
+                            final confirm = await showDialog(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text("Logout"),
+                                content: const Text("Are you sure?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text("Cancel"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text("Logout"),
+                                  ),
+                                ],
+                              ),
+                            );
+
+                            if (confirm == true) {
+                              await auth.logout();
+
+                              Navigator.pushAndRemoveUntil(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const LoginScreen(),
+                                ),
+                                (route) => false,
+                              );
+                            }
+                          },
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
 
-              AppSpacing.h20,
+                AppSpacing.h20,
 
-              // 🔥 MANAGE USERS HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text("Manage Users", style: AppTextStyles.subHeading),
-                  Text("View All"),
-                ],
-              ),
-
-              AppSpacing.h10,
-
-              // 🔥 USERS LIST
-              AppCard(
-                child: Column(
-                  children: users.isEmpty
-                      ? [
-                          const Padding(
-                            padding: EdgeInsets.all(10),
-                            child: Text("No users found"),
-                          ),
-                        ]
-                      : users.map((user) {
-                          final safeName = user.name.trim().isEmpty
-                              ? "No Name"
-                              : user.name;
-
-                          return GestureDetector(
-                            onLongPress: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) {
-                                  return AlertDialog(
-                                    title: const Text("Delete User"),
-                                    content: Text(
-                                      "Are you sure you want to delete $safeName?",
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text("Cancel"),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          if (auth.currentUser?.id == user.id) {
-                                            Navigator.pop(context);
-
-                                            ScaffoldMessenger.of(
-                                              context,
-                                            ).showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  "You cannot delete yourself",
-                                                ),
-                                              ),
-                                            );
-                                            return;
-                                          }
-
-                                          userProvider.deleteUser(user);
-
-                                          Navigator.pop(context);
-
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                "User deleted successfully",
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text(
-                                          "Delete",
-                                          style: TextStyle(color: Colors.red),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              );
-                            },
-
-                            // 🔥 USER TILE
-                            child: Container(
-                              margin: const EdgeInsets.only(bottom: 10),
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundColor: Colors.orange.shade100,
-                                    child: Text(
-                                      getInitial(user.name),
-                                      style: const TextStyle(
-                                        color: Colors.orange,
-                                      ),
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 10),
-
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          safeName,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        Text(
-                                          user.email.isNotEmpty
-                                              ? user.email
-                                              : "No Email",
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: user.role == 'admin'
-                                          ? Colors.green.withOpacity(0.2)
-                                          : Colors.blue.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      user.role,
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: user.role == 'admin'
-                                            ? Colors.green
-                                            : Colors.blue,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
+                /// STATS
+                AppCard(
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: StatCard(
+                              title: "Total Tasks",
+                              count: total,
+                              color: Colors.green,
                             ),
-                          );
-                        }).toList(),
-                ),
-              ),
-
-              AppSpacing.h20,
-
-              // 🔥 ACTIVITY HEADER
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text("Recent Activity", style: AppTextStyles.subHeading),
-                  Text("View All"),
-                ],
-              ),
-
-              AppSpacing.h10,
-
-              // 🔥 ACTIVITY LIST (SAFE)
-              Expanded(
-                child: recentTasks.isEmpty
-                    ? const Center(child: Text("No recent activity"))
-                    : ListView(
-                        children: recentTasks
-                            .map(
-                              (task) =>
-                                  ActivityTile(name: task.title ?? "No Title"),
-                            )
-                            .toList(),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: StatCard(
+                              title: "Pending Tasks",
+                              count: pending,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
                       ),
-              ),
-            ],
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: StatCard(
+                              title: "Completed Tasks",
+                              count: completed,
+                              color: Colors.orange,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: StatCard(
+                              title: "Deleted Tasks",
+                              count: deleted,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                AppSpacing.h20,
+
+                /// MANAGE USERS
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Manage Users",
+                        style: AppTextStyles.subHeading,
+                      ),
+                      AppSpacing.h10,
+
+                      ...users.map((user) {
+                        final safeName = user.name.trim().isEmpty
+                            ? "No Name"
+                            : user.name;
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            child: Text(safeName[0].toUpperCase()),
+                          ),
+                          title: Text(safeName),
+                          subtitle: Text(user.email),
+                          trailing: Text(user.role),
+
+                          onLongPress: () {
+                            _showDeleteUserDialog(context, user, userProvider);
+                          },
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+
+                AppSpacing.h20,
+
+                /// RECENT USER ACTIVITY
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        "Recent User Activity",
+                        style: AppTextStyles.subHeading,
+                      ),
+                      AppSpacing.h10,
+
+                      ...activities.take(5).map((activity) {
+                        final user = users.firstWhere(
+                          (u) => u.id == activity.userId,
+                          orElse: () => users.first,
+                        );
+
+                        IconData icon;
+                        Color color;
+
+                        switch (activity.action) {
+                          case "completed":
+                            icon = Icons.check;
+                            color = Colors.green;
+                            break;
+
+                          case "deleted":
+                            icon = Icons.delete;
+                            color = Colors.red;
+                            break;
+
+                          default:
+                            icon = Icons.add;
+                            color = Colors.orange;
+                        }
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundColor: color,
+                            child: Icon(icon, color: Colors.white),
+                          ),
+                          title: Text("${user.name} (${user.role})"),
+                          subtitle: Text(
+                            "${activity.action} '${activity.taskTitle}'",
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

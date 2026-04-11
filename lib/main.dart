@@ -11,6 +11,7 @@ import 'providers/theme_provider.dart';
 import 'providers/task_provider.dart';
 
 import 'ui/screens/auth/login_screen.dart';
+import 'providers/activity_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,18 +36,17 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()), // ✅ ADD THIS
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'TaskPilot',
-
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeProvider.themeMode,
-
-            home: const LoginScreen(), // 🔐 Start from login
+            home: const LoginScreen(),
           );
         },
       ),

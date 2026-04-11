@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'dart:math';
 
 import '../data/models/user_model.dart';
+import 'package:mailer/mailer.dart';
+import 'package:mailer/smtp_server.dart';
 
 class AuthProvider extends ChangeNotifier {
   UserModel? _currentUser;
@@ -11,6 +14,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
 
   bool get isAdmin => _currentUser?.role == 'admin';
+
+  bool get isUser => _currentUser?.role == 'user';
+
+  // 🔐 OTP VARIABLES
+  String? _otp;
+  String? _otpEmail;
 
   // ============================
   // 🔐 LOGIN
@@ -36,6 +45,43 @@ class AuthProvider extends ChangeNotifier {
     } catch (e) {
       return false;
     }
+  }
+
+  // ============================
+  // 🔥 LOGIN WITH REMEMBER ME
+  // ============================
+  Future<bool> loginWithRemember(
+    String email,
+    String password,
+    bool rememberMe,
+  ) async {
+    final success = await login(email, password);
+
+    if (success) {
+      final settingsBox = Hive.box('settings');
+
+      if (rememberMe) {
+        await settingsBox.put('rememberEmail', email);
+        await settingsBox.put('rememberPassword', password);
+      } else {
+        await settingsBox.delete('rememberEmail');
+        await settingsBox.delete('rememberPassword');
+      }
+    }
+
+    return success;
+  }
+
+  // ============================
+  // 📥 GET REMEMBERED USER
+  // ============================
+  Map<String, String?> getRememberedUser() {
+    final settingsBox = Hive.box('settings');
+
+    return {
+      'email': settingsBox.get('rememberEmail'),
+      'password': settingsBox.get('rememberPassword'),
+    };
   }
 
   // ============================
@@ -72,7 +118,55 @@ class AuthProvider extends ChangeNotifier {
   }
 
   // ============================
-  // 🔄 RESET PASSWORD (BY EMAIL)
+  // 🔐 SEND OTP (EMAIL)
+  // ============================
+  Future<bool> sendOtpEmail(String email) async {
+    final box = Hive.box<UserModel>('users');
+
+    try {
+      final user = box.values.firstWhere(
+        (u) => u.email.toLowerCase() == email.toLowerCase(),
+      );
+
+      // 🔥 GENERATE OTP
+      final random = Random();
+      _otp = (100000 + random.nextInt(900000)).toString();
+      _otpEmail = user.email;
+
+      // 🔐 EMAIL CONFIG
+      const username = 'divyaidayavel2001@gmail.com';
+      const password = 'dobt wzzc ugli xlum';
+
+      final smtpServer = gmail(username, password);
+
+      final message = Message()
+        ..from = Address(username, 'TaskPilot App')
+        ..recipients.add(email)
+        ..subject = 'Password Reset OTP'
+        ..text = 'Your OTP is $_otp';
+
+      try {
+        await send(message, smtpServer);
+        print("OTP sent: $_otp");
+        return true;
+      } catch (e) {
+        print("Email failed: $e");
+        return false;
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ============================
+  // 🔐 VERIFY OTP
+  // ============================
+  bool verifyOtp(String email, String otp) {
+    return _otp == otp && _otpEmail == email;
+  }
+
+  // ============================
+  // 🔄 RESET PASSWORD
   // ============================
   bool resetPassword(String email, String newPassword) {
     final box = Hive.box<UserModel>('users');
@@ -86,6 +180,10 @@ class AuthProvider extends ChangeNotifier {
       user.save();
 
       notifyListeners();
+
+      _otp = null;
+      _otpEmail = null;
+
       return true;
     } catch (e) {
       return false;
