@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
+import '../../../providers/task_provider.dart';
+import '../../../providers/user_provider.dart';
+
 import 'task_assigned_screen.dart';
 
 class AssignTaskScreen extends StatefulWidget {
@@ -12,9 +17,16 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController descController = TextEditingController();
 
-  String selectedUser = "Select User";
+  String? selectedUserId;
   String selectedPriority = "Medium";
   DateTime? selectedDate;
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    super.dispose();
+  }
 
   // 🔥 DATE PICKER
   Future<void> pickDate() async {
@@ -85,8 +97,47 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
     );
   }
 
+  // 🔥 ASSIGN TASK
+  void assignTask() {
+    final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+
+    if (titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter task title")));
+      return;
+    }
+
+    if (selectedUserId == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Select user")));
+      return;
+    }
+
+    taskProvider.addTask(titleController.text.trim(), selectedUserId!, context);
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const TaskAssignedScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // ✅ ONLY NORMAL USERS (NOT ADMIN)
+    final users = userProvider.users
+        .where((user) => user.role.toLowerCase() == "user")
+        .toList();
+
+    // ✅ AUTO RESET IF DELETED USER
+    if (selectedUserId != null &&
+        !users.any((user) => user.id == selectedUserId)) {
+      selectedUserId = null;
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -122,34 +173,33 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 ASSIGN TO
+                  // 🔥 USER DROPDOWN
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
                       color: Colors.grey.shade100,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: DropdownButton(
+                    child: DropdownButton<String>(
                       isExpanded: true,
-                      value: selectedUser,
+                      value: selectedUserId,
                       underline: const SizedBox(),
-                      items: ["Select User", "User 1", "User 2"]
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Row(
-                                children: [
-                                  const Icon(Icons.person, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(e),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
+                      hint: const Text("Select User"),
+                      items: users.map((user) {
+                        return DropdownMenuItem<String>(
+                          value: user.id,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person, size: 18),
+                              const SizedBox(width: 8),
+                              Text(user.name),
+                            ],
+                          ),
+                        );
+                      }).toList(),
                       onChanged: (value) {
                         setState(() {
-                          selectedUser = value!;
+                          selectedUserId = value;
                         });
                       },
                     ),
@@ -216,16 +266,10 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const TaskAssignedScreen(),
-                    ),
-                  );
-                },
+                onPressed: assignTask,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

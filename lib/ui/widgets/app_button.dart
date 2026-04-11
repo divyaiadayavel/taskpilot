@@ -12,6 +12,7 @@ class AppButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         height: 55,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
@@ -19,10 +20,10 @@ class AppButton extends StatelessWidget {
             colors: [AppColors.primary, AppColors.secondary],
           ),
         ),
-        child: const Center(
+        child: Center(
           child: Text(
-            "Sign In",
-            style: TextStyle(
+            text, // ✅ FIXED HERE
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
