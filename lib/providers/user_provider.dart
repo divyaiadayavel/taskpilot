@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-
 import '../data/models/user_model.dart';
 
 class UserProvider extends ChangeNotifier {
   final box = Hive.box<UserModel>('users');
 
-  // ✅ ACTIVE USERS ONLY
   List<UserModel> get users =>
       box.values.where((u) => u.isDeleted == false).toList();
 
-  // ♻️ RECYCLE BIN USERS
   List<UserModel> get deletedUsers =>
       box.values.where((u) => u.isDeleted == true).toList();
 
-  // ➕ ADD USER
-  void addUser(String name, String email, String password, String role) {
+  /// ✅ UPDATED: Accepts optional profileImage and RETURNS the user object
+  UserModel addUser(
+    String name,
+    String email,
+    String password,
+    String role, {
+    String? profileImage,
+  }) {
     final user = UserModel(
       id: const Uuid().v4(),
       name: name,
@@ -24,30 +27,37 @@ class UserProvider extends ChangeNotifier {
       password: password,
       role: role,
       createdAt: DateTime.now(),
-      isDeleted: false, // ✅ always active
+      isDeleted: false,
+      profileImage: profileImage, // ✅ Set the image path here
     );
 
     box.add(user);
     notifyListeners();
+
+    return user; // ✅ Return the user so we can pass it to the success screen
   }
 
-  // ♻️ SOFT DELETE (MOVE TO RECYCLE BIN)
   void deleteUser(UserModel user) {
     user.isDeleted = true;
-    user.save(); // 🔥 important for Hive
+    user.save();
     notifyListeners();
   }
 
-  // 🔄 RESTORE USER
   void restoreUser(UserModel user) {
     user.isDeleted = false;
     user.save();
     notifyListeners();
   }
 
-  // ❌ PERMANENT DELETE
   void permanentDelete(UserModel user) {
-    user.delete(); // Hive permanent delete
+    user.delete();
+    notifyListeners();
+  }
+
+  /// ✅ UPDATE PROFILE IMAGE
+  Future<void> updateProfileImage(UserModel user, String imagePath) async {
+    user.profileImage = imagePath;
+    await user.save();
     notifyListeners();
   }
 }

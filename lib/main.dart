@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:hive/hive.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/services/hive_service.dart';
@@ -17,13 +16,7 @@ import 'ui/screens/auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 INIT HIVE
   await HiveService.init();
-
-  // 🔥 OPEN SETTINGS BOX
-  await Hive.openBox('settings');
-
-  // 🔥 SEED DATA (runs only if empty)
   await SeedData.seedAll();
 
   runApp(const MyApp());

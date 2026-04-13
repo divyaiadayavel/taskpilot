@@ -1,49 +1,39 @@
 import 'package:flutter/material.dart';
-import '../constants/colors.dart';
 
 class AppTheme {
-  // 🌞 LIGHT THEME
   static ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    scaffoldBackgroundColor: AppColors.backgroundLight,
-    primaryColor: AppColors.primary,
-
-    cardColor: AppColors.cardLight,
+    primarySwatch: Colors.orange,
+    scaffoldBackgroundColor: const Color(0xFFF5F5F5),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.orange,
+      foregroundColor: Colors.white,
       elevation: 0,
-      foregroundColor: Colors.black,
     ),
 
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
+    cardTheme: CardThemeData(
+      color: Colors.white,
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );
 
-  // 🌙 DARK THEME
   static ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.backgroundDark,
-    primaryColor: AppColors.primary,
-
-    cardColor: AppColors.cardDark,
+    primarySwatch: Colors.orange,
+    scaffoldBackgroundColor: const Color(0xFF121212),
 
     appBarTheme: const AppBarTheme(
-      backgroundColor: Color(0xFF1E1E1E),
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
       elevation: 0,
     ),
 
-    inputDecorationTheme: InputDecorationTheme(
-      filled: true,
-      fillColor: AppColors.cardDark,
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+    cardTheme: CardThemeData(
+      color: const Color(0xFF1E1E1E),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
   );
 }

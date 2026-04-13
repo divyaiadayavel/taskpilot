@@ -24,13 +24,14 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       role: fields[4] as String,
       createdAt: fields[5] as DateTime,
       isDeleted: fields[6] as bool,
+      profileImage: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, UserModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class UserModelAdapter extends TypeAdapter<UserModel> {
       ..writeByte(5)
       ..write(obj.createdAt)
       ..writeByte(6)
-      ..write(obj.isDeleted);
+      ..write(obj.isDeleted)
+      ..writeByte(7)
+      ..write(obj.profileImage);
   }
 
   @override

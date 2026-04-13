@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
 
 import '../../../core/constants/colors.dart';
 import '../../../core/constants/spacing.dart';
@@ -13,6 +16,7 @@ import '../../../providers/user_provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../providers/activity_provider.dart';
 
+import '../../../data/models/user_model.dart';
 import '../auth/login_screen.dart';
 import 'create_user_screen.dart';
 import 'assign_task_screen.dart';
@@ -27,6 +31,37 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int selectedIndex = 0;
+
+  /// ✅ PICK AND CROP IMAGE FUNCTION
+  Future<void> _pickAndCropImage(BuildContext context, UserModel user) async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery);
+
+    if (file == null) return;
+
+    final croppedFile = await ImageCropper().cropImage(
+      sourcePath: file.path,
+      uiSettings: [
+        AndroidUiSettings(
+          toolbarTitle: 'Adjust Profile Photo',
+          toolbarColor: AppColors.primary,
+          toolbarWidgetColor: Colors.white,
+          initAspectRatio: CropAspectRatioPreset.square,
+          lockAspectRatio: true,
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+        ),
+        IOSUiSettings(
+          title: 'Adjust Photo',
+          aspectRatioPresets: [CropAspectRatioPreset.square],
+        ),
+      ],
+    );
+
+    if (croppedFile != null && context.mounted) {
+      final userProvider = Provider.of<UserProvider>(context, listen: false);
+      await userProvider.updateProfileImage(user, croppedFile.path);
+    }
+  }
 
   /// ✅ DELETE USER CONFIRM POPUP
   Future<void> _showDeleteUserDialog(
@@ -56,12 +91,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
 
-    /// ✅ UPDATED DELETE USER + DELETE USER TASKS
     if (confirm == true) {
       final taskProvider = Provider.of<TaskProvider>(context, listen: false);
-
       taskProvider.deleteTasksByUser(user.id);
-
       userProvider.deleteUser(user);
     }
   }
@@ -70,20 +102,14 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     final taskProvider = Provider.of<TaskProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final auth = Provider.of<AuthProvider>(context);
     final activityProvider = Provider.of<ActivityProvider>(context);
 
     final activities = activityProvider.activities;
     final users = userProvider.users;
 
-    final total = taskProvider.totalTasks;
-    final pending = taskProvider.pendingTasks;
-    final completed = taskProvider.completedTasks;
-    final deleted = taskProvider.deletedTasks;
-
     return Scaffold(
       backgroundColor: AppColors.backgroundLight,
-
       bottomNavigationBar: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -98,7 +124,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
               child: GestureDetector(
                 onTap: () {
                   setState(() => selectedIndex = 0);
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const AssignTaskScreen()),
@@ -108,7 +133,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: selectedIndex == 0
-                        ? Colors.orange
+                        ? AppColors.primary
                         : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -133,14 +158,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 ),
               ),
             ),
-
             const SizedBox(width: 10),
-
             Expanded(
               child: GestureDetector(
                 onTap: () {
                   setState(() => selectedIndex = 1);
-
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CreateUserScreen()),
@@ -150,7 +172,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     color: selectedIndex == 1
-                        ? Colors.orange
+                        ? AppColors.primary
                         : Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -178,7 +200,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
           ],
         ),
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -197,21 +218,37 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
                     Row(
                       children: [
-                        const Text("Admin"),
+                        Text(auth.currentUser?.name ?? "Admin"),
                         const SizedBox(width: 10),
 
-                        const CircleAvatar(
-                          radius: 20,
-                          backgroundImage: AssetImage(
-                            'assets/images/profile-pic.jpg',
+                        /// ✅ RESTORED PROFILE AVATAR WITH TAP TO CHANGE
+                        GestureDetector(
+                          onTap: () {
+                            if (auth.currentUser != null) {
+                              _pickAndCropImage(context, auth.currentUser!);
+                            }
+                          },
+                          child: CircleAvatar(
+                            radius: 20,
+                            backgroundColor: AppColors.primary,
+                            backgroundImage:
+                                auth.currentUser?.profileImage != null
+                                ? FileImage(
+                                    File(auth.currentUser!.profileImage!),
+                                  )
+                                : null,
+                            child: auth.currentUser?.profileImage == null
+                                ? Text(
+                                    auth.currentUser?.name[0].toUpperCase() ??
+                                        "A",
+                                    style: const TextStyle(color: Colors.white),
+                                  )
+                                : null,
                           ),
                         ),
-
                         const SizedBox(width: 10),
-
                         IconButton(
                           icon: const Icon(Icons.logout, color: Colors.red),
                           onPressed: () async {
@@ -234,17 +271,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                 ],
                               ),
                             );
-
                             if (confirm == true) {
                               await auth.logout();
-
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
-                                (route) => false,
-                              );
+                              if (context.mounted) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
                             }
                           },
                         ),
@@ -264,7 +301,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Expanded(
                             child: StatCard(
                               title: "Total Tasks",
-                              count: total,
+                              count: taskProvider.totalTasks,
                               color: Colors.green,
                             ),
                           ),
@@ -272,7 +309,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Expanded(
                             child: StatCard(
                               title: "Pending Tasks",
-                              count: pending,
+                              count: taskProvider.pendingTasks,
                               color: Colors.blue,
                             ),
                           ),
@@ -284,7 +321,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Expanded(
                             child: StatCard(
                               title: "Completed Tasks",
-                              count: completed,
+                              count: taskProvider.completedTasks,
                               color: Colors.orange,
                             ),
                           ),
@@ -292,7 +329,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           Expanded(
                             child: StatCard(
                               title: "Deleted Tasks",
-                              count: deleted,
+                              count: taskProvider.deletedTasks,
                               color: Colors.red,
                             ),
                           ),
@@ -314,21 +351,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         style: AppTextStyles.subHeading,
                       ),
                       AppSpacing.h10,
-
                       ...users.map((user) {
                         final safeName = user.name.trim().isEmpty
                             ? "No Name"
                             : user.name;
-
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
-                            child: Text(safeName[0].toUpperCase()),
+                            backgroundImage: user.profileImage != null
+                                ? FileImage(File(user.profileImage!))
+                                : null,
+                            child: user.profileImage == null
+                                ? Text(safeName[0].toUpperCase())
+                                : null,
                           ),
                           title: Text(safeName),
                           trailing: Text(user.role),
-
-                          /// OPEN DETAILS
                           onTap: () {
                             Navigator.push(
                               context,
@@ -337,8 +375,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
                               ),
                             );
                           },
-
-                          /// LONG PRESS DELETE
                           onLongPress: () {
                             _showDeleteUserDialog(context, user, userProvider);
                           },
@@ -360,27 +396,23 @@ class _AdminDashboardState extends State<AdminDashboard> {
                         style: AppTextStyles.subHeading,
                       ),
                       AppSpacing.h10,
-
                       ...activities.take(5).map((activity) {
-                        final user = users.firstWhere(
+                        final actUser = users.firstWhere(
                           (u) => u.id == activity.userId,
                           orElse: () => users.first,
                         );
 
                         IconData icon;
                         Color color;
-
                         switch (activity.action) {
                           case "completed":
                             icon = Icons.check;
                             color = Colors.green;
                             break;
-
                           case "deleted":
                             icon = Icons.delete;
                             color = Colors.red;
                             break;
-
                           default:
                             icon = Icons.add;
                             color = Colors.orange;
@@ -390,9 +422,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor: color,
-                            child: Icon(icon, color: Colors.white),
+                            child: Icon(icon, color: Colors.white, size: 16),
                           ),
-                          title: Text("${user.name} (${user.role})"),
+                          title: Text("${actUser.name} (${actUser.role})"),
                           subtitle: Text(
                             "${activity.action} '${activity.taskTitle}'",
                           ),

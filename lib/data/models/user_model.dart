@@ -22,9 +22,11 @@ class UserModel extends HiveObject {
   @HiveField(5)
   DateTime createdAt;
 
-  // ✅ NEW FIELD
   @HiveField(6)
   bool isDeleted;
+
+  @HiveField(7)
+  String? profileImage;
 
   UserModel({
     required this.id,
@@ -33,6 +35,7 @@ class UserModel extends HiveObject {
     required this.password,
     required this.role,
     required this.createdAt,
-    this.isDeleted = false, // ✅ default
+    this.isDeleted = false,
+    this.profileImage,
   });
 }
