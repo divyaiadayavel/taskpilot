@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:open_filex/open_filex.dart';
 
 import '../../../core/constants/colors.dart';
 import '../../../providers/task_provider.dart';
@@ -27,22 +28,17 @@ class _UserDashboardState extends State<UserDashboard> {
       return const Scaffold(body: Center(child: Text("User not found")));
     }
 
-    /// ✅ FILTER TASKS
+    /// ✅ USER TASKS
     List tasks = taskProvider.getUserTasks(user.id, filter);
 
-    /// ✅ SEARCH FILTER
+    /// ✅ SEARCH
     if (searchQuery.isNotEmpty) {
-      tasks = tasks
-          .where(
-            (t) => t.title.toLowerCase().contains(searchQuery.toLowerCase()),
-          )
-          .toList();
+      tasks = tasks.where((t) {
+        return t.title.toLowerCase().contains(searchQuery.toLowerCase());
+      }).toList();
     }
 
     return Scaffold(
-      // backgroundColor: AppColors.background,
-
-      /// 🔥 APPBAR WITH LOGOUT CONFIRM
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: const Text("TaskPilot"),
@@ -55,7 +51,7 @@ class _UserDashboardState extends State<UserDashboard> {
             ),
           ),
 
-          /// ✅ LOGOUT WITH CONFIRM
+          /// LOGOUT
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
@@ -96,7 +92,7 @@ class _UserDashboardState extends State<UserDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 👋 GREETING
+            /// GREETING
             Text(
               "Hi ${user.name}",
               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -111,7 +107,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
             const SizedBox(height: 16),
 
-            /// 🔍 SEARCH BAR
+            /// SEARCH
             TextField(
               onChanged: (value) {
                 setState(() {
@@ -132,7 +128,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
             const SizedBox(height: 16),
 
-            /// 🔘 FILTER CHIPS
+            /// FILTERS
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -151,7 +147,7 @@ class _UserDashboardState extends State<UserDashboard> {
 
             const SizedBox(height: 16),
 
-            /// 📋 TASK LIST
+            /// TASK LIST
             Expanded(
               child: tasks.isEmpty
                   ? const Center(child: Text("No tasks assigned"))
@@ -179,16 +175,92 @@ class _UserDashboardState extends State<UserDashboard> {
                                 ),
                               ),
 
-                              const SizedBox(height: 6),
+                              const SizedBox(height: 8),
 
-                              /// DESCRIPTION (OPTIONAL)
+                              /// DESCRIPTION
                               if (task.description != null &&
                                   task.description.isNotEmpty)
                                 Text(task.description),
 
                               const SizedBox(height: 8),
 
-                              /// STATUS + ACTION
+                              /// DUE DATE
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    task.dueDate != null
+                                        ? "Due: ${task.dueDate.toString().split(' ')[0]}"
+                                        : "Due: No Date",
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              /// PRIORITY
+                              Row(
+                                children: [
+                                  const Icon(Icons.flag, size: 16),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    "Priority: ${task.priority ?? 'Medium'}",
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              /// FILE OPEN
+                              if (task.fileName != null &&
+                                  task.fileName.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.attach_file),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          task.fileName,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      TextButton(
+                                        onPressed: () async {
+                                          if (task.fileUrl != null &&
+                                              task.fileUrl!.isNotEmpty) {
+                                            final result = await OpenFilex.open(
+                                              task.fileUrl!,
+                                            );
+
+                                            if (result.type !=
+                                                    ResultType.done &&
+                                                context.mounted) {
+                                              ScaffoldMessenger.of(
+                                                context,
+                                              ).showSnackBar(
+                                                SnackBar(
+                                                  content: Text(result.message),
+                                                ),
+                                              );
+                                            }
+                                          }
+                                        },
+                                        child: const Text("Open"),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                              const SizedBox(height: 10),
+
+                              /// STATUS
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
@@ -199,10 +271,10 @@ class _UserDashboardState extends State<UserDashboard> {
                                       color: task.isDone
                                           ? Colors.green
                                           : Colors.orange,
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
 
-                                  /// ✅ TOGGLE BUTTON
                                   IconButton(
                                     icon: Icon(
                                       task.isDone
@@ -230,13 +302,15 @@ class _UserDashboardState extends State<UserDashboard> {
     );
   }
 
-  /// 🔘 FILTER BUTTON
+  /// FILTER BUTTON
   Widget buildFilter(String text) {
     final isSelected = filter == text;
 
     return GestureDetector(
       onTap: () {
-        setState(() => filter = text);
+        setState(() {
+          filter = text;
+        });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:file_picker/file_picker.dart';
 
 import '../../../providers/task_provider.dart';
 import '../../../providers/user_provider.dart';
@@ -21,6 +22,10 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
   String selectedPriority = "Medium";
   DateTime? selectedDate;
 
+  /// 📎 FILE VARIABLES
+  String? pickedFileName;
+  String? pickedFilePath;
+
   @override
   void dispose() {
     titleController.dispose();
@@ -40,6 +45,18 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
     if (picked != null) {
       setState(() {
         selectedDate = picked;
+      });
+    }
+  }
+
+  // 📎 PICK FILE FUNCTION
+  Future<void> pickFile() async {
+    FilePickerResult? result = await FilePicker.pickFiles();
+
+    if (result != null) {
+      setState(() {
+        pickedFileName = result.files.single.name;
+        pickedFilePath = result.files.single.path;
       });
     }
   }
@@ -115,7 +132,16 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
       return;
     }
 
-    taskProvider.addTask(titleController.text.trim(), selectedUserId!, context);
+    taskProvider.addTask(
+      titleController.text.trim(),
+      selectedUserId!,
+      context,
+      fileName: pickedFileName,
+      fileUrl: pickedFilePath,
+      dueDate: selectedDate,
+      priority: selectedPriority,
+      description: descController.text.trim(),
+    );
 
     Navigator.pushReplacement(
       context,
@@ -127,12 +153,10 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
   Widget build(BuildContext context) {
     final userProvider = Provider.of<UserProvider>(context);
 
-    // ✅ ONLY NORMAL USERS (NOT ADMIN)
     final users = userProvider.users
         .where((user) => user.role.toLowerCase() == "user")
         .toList();
 
-    // ✅ AUTO RESET IF DELETED USER
     if (selectedUserId != null &&
         !users.any((user) => user.id == selectedUserId)) {
       selectedUserId = null;
@@ -140,14 +164,12 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       appBar: AppBar(
         title: const Text("Assign Task"),
         backgroundColor: Colors.orange,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -155,7 +177,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
             Expanded(
               child: ListView(
                 children: [
-                  // 🔥 TITLE
+                  // TITLE
                   buildField(
                     hint: "Task Title",
                     icon: Icons.title,
@@ -164,7 +186,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 DESCRIPTION
+                  // DESCRIPTION
                   buildField(
                     hint: "Description",
                     icon: Icons.description,
@@ -173,7 +195,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 USER DROPDOWN
+                  // USER DROPDOWN
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     decoration: BoxDecoration(
@@ -188,13 +210,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
                       items: users.map((user) {
                         return DropdownMenuItem<String>(
                           value: user.id,
-                          child: Row(
-                            children: [
-                              const Icon(Icons.person, size: 18),
-                              const SizedBox(width: 8),
-                              Text(user.name),
-                            ],
-                          ),
+                          child: Text(user.name),
                         );
                       }).toList(),
                       onChanged: (value) {
@@ -207,7 +223,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 DATE PICKER
+                  // DATE PICKER
                   GestureDetector(
                     onTap: pickDate,
                     child: Container(
@@ -232,7 +248,7 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 PRIORITY
+                  // PRIORITY
                   Row(
                     children: [
                       buildPriority("Low"),
@@ -243,26 +259,43 @@ class _AssignTaskScreenState extends State<AssignTaskScreen> {
 
                   const SizedBox(height: 15),
 
-                  // 🔥 ATTACH FILE
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.attach_file),
-                        SizedBox(width: 10),
-                        Text("Attach File"),
-                      ],
+                  // ATTACH FILE
+                  GestureDetector(
+                    onTap: pickFile,
+                    child: Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.attach_file),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              pickedFileName ?? "Attach File",
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
+                  if (pickedFileName != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        "Selected: $pickedFileName",
+                        style: const TextStyle(color: Colors.green),
+                      ),
+                    ),
                 ],
               ),
             ),
 
-            // 🔥 BUTTON
+            // BUTTON
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

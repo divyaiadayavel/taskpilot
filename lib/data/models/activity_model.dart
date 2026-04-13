@@ -26,4 +26,19 @@ class ActivityModel extends HiveObject {
     required this.taskTitle,
     required this.time,
   });
+
+  /// ✅ Formatted Date
+  String get formattedDate {
+    return "${time.day}-${time.month}-${time.year}";
+  }
+
+  /// ✅ Formatted Time
+  String get formattedTime {
+    return "${time.hour}:${time.minute.toString().padLeft(2, '0')}";
+  }
+
+  /// ✅ Full Date Time
+  String get formattedDateTime {
+    return "$formattedDate  $formattedTime";
+  }
 }

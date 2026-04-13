@@ -20,7 +20,27 @@ class TaskModel extends HiveObject {
   DateTime createdAt;
 
   @HiveField(5)
-  String? description; // ✅ ADD THIS
+  String? description;
+
+  /// 🔥 PRIORITY
+  @HiveField(6)
+  String? priority;
+
+  /// 📅 DUE DATE
+  @HiveField(7)
+  DateTime? dueDate;
+
+  /// 📎 ATTACHMENT FILE NAME
+  @HiveField(8)
+  String? fileName;
+
+  /// 📎 ATTACHMENT FILE PATH / URL
+  @HiveField(9)
+  String? fileUrl;
+
+  /// ✅ COMPLETION TIME
+  @HiveField(10)
+  DateTime? completedAt;
 
   TaskModel({
     required this.id,
@@ -29,5 +49,10 @@ class TaskModel extends HiveObject {
     required this.createdAt,
     this.isDone = false,
     this.description,
+    this.priority,
+    this.dueDate,
+    this.fileName,
+    this.fileUrl,
+    this.completedAt,
   });
 }

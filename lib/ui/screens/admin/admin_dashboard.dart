@@ -16,6 +16,7 @@ import '../../../providers/activity_provider.dart';
 import '../auth/login_screen.dart';
 import 'create_user_screen.dart';
 import 'assign_task_screen.dart';
+import 'user_details_screen.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -320,9 +321,20 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             child: Text(safeName[0].toUpperCase()),
                           ),
                           title: Text(safeName),
-                          subtitle: Text(user.email),
+                          // subtitle: Text(user.email),
                           trailing: Text(user.role),
 
+                          /// ✅ CLICK USER → OPEN DETAILS SCREEN
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => UserDetailsScreen(user: user),
+                              ),
+                            );
+                          },
+
+                          /// ✅ LONG PRESS → DELETE POPUP
                           onLongPress: () {
                             _showDeleteUserDialog(context, user, userProvider);
                           },

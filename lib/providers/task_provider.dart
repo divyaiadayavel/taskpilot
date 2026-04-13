@@ -12,8 +12,17 @@ class TaskProvider extends ChangeNotifier {
   // 📋 ALL TASKS
   List<TaskModel> get tasks => box.values.toList();
 
-  // ➕ ADD TASK
-  void addTask(String title, String userId, BuildContext context) {
+  // ➕ ADD TASK (UPDATED WITH FILE + PRIORITY + DATE)
+  void addTask(
+    String title,
+    String userId,
+    BuildContext context, {
+    String? fileName,
+    String? fileUrl,
+    DateTime? dueDate,
+    String? priority,
+    String? description,
+  }) {
     if (title.trim().isEmpty) return;
 
     final task = TaskModel(
@@ -22,6 +31,13 @@ class TaskProvider extends ChangeNotifier {
       userId: userId,
       createdAt: DateTime.now(),
       isDone: false,
+
+      // 🔥 NEW FIELDS ADDED
+      fileName: fileName,
+      fileUrl: fileUrl,
+      dueDate: dueDate,
+      priority: priority,
+      description: description,
     );
 
     box.add(task);
