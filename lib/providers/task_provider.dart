@@ -4,15 +4,22 @@ import 'package:uuid/uuid.dart';
 import 'package:provider/provider.dart';
 
 import '../data/models/task_model.dart';
-import 'activity_provider.dart'; // ✅ ADD THIS
+import 'activity_provider.dart';
 
 class TaskProvider extends ChangeNotifier {
   final Box<TaskModel> box = Hive.box<TaskModel>('tasks');
 
-  // 📋 ALL TASKS
+  /// 🗑 STORE DELETED COUNT
+  final Box settingsBox = Hive.box('settings');
+
+  int get _deletedTasks => settingsBox.get('deletedTasks', defaultValue: 0);
+
+  /// 📋 ALL TASKS
   List<TaskModel> get tasks => box.values.toList();
 
-  // ➕ ADD TASK (UPDATED WITH FILE + PRIORITY + DATE)
+  // ===================================================
+  // ➕ ADD TASK
+  // ===================================================
   void addTask(
     String title,
     String userId,
@@ -31,8 +38,6 @@ class TaskProvider extends ChangeNotifier {
       userId: userId,
       createdAt: DateTime.now(),
       isDone: false,
-
-      // 🔥 NEW FIELDS ADDED
       fileName: fileName,
       fileUrl: fileUrl,
       dueDate: dueDate,
@@ -42,7 +47,6 @@ class TaskProvider extends ChangeNotifier {
 
     box.add(task);
 
-    /// 🔥 ADD ACTIVITY
     Provider.of<ActivityProvider>(
       context,
       listen: false,
@@ -51,12 +55,13 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ✅ TOGGLE TASK STATUS
+  // ===================================================
+  // ✅ COMPLETE / PENDING TOGGLE
+  // ===================================================
   void toggleTask(TaskModel task, BuildContext context) {
     task.isDone = !task.isDone;
     task.save();
 
-    /// 🔥 ADD ACTIVITY (ONLY WHEN COMPLETED)
     if (task.isDone) {
       Provider.of<ActivityProvider>(context, listen: false).addActivity(
         userId: task.userId,
@@ -68,9 +73,10 @@ class TaskProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ❌ DELETE TASK
+  // ===================================================
+  // ❌ DELETE SINGLE TASK
+  // ===================================================
   void deleteTask(TaskModel task, BuildContext context) {
-    /// 🔥 ADD ACTIVITY BEFORE DELETE
     Provider.of<ActivityProvider>(context, listen: false).addActivity(
       userId: task.userId,
       action: "deleted",
@@ -78,25 +84,47 @@ class TaskProvider extends ChangeNotifier {
     );
 
     task.delete();
+
+    settingsBox.put('deletedTasks', _deletedTasks + 1);
+
     notifyListeners();
   }
 
-  // ============================
-  // 📊 DASHBOARD STATS
-  // ============================
+  // ===================================================
+  // ❌ DELETE ALL TASKS OF USER
+  // ===================================================
+  void deleteTasksByUser(String userId) {
+    final userTasks = box.values
+        .where((task) => task.userId == userId)
+        .toList();
 
+    for (final task in userTasks) {
+      task.delete();
+      settingsBox.put('deletedTasks', _deletedTasks + 1);
+    }
+
+    notifyListeners();
+  }
+
+  // ===================================================
+  // 📊 DASHBOARD COUNTS
+  // ===================================================
+
+  /// Total active tasks
   int get totalTasks => box.length;
 
+  /// Completed tasks
   int get completedTasks => box.values.where((task) => task.isDone).length;
 
+  /// Pending tasks
   int get pendingTasks => box.values.where((task) => !task.isDone).length;
 
-  int get deletedTasks => 0; // future feature
+  /// Deleted tasks count
+  int get deletedTasks => _deletedTasks;
 
-  // ============================
-  // 🧑 USER TASKS WITH FILTER
-  // ============================
-
+  // ===================================================
+  // 👤 USER TASK FILTER
+  // ===================================================
   List<TaskModel> getUserTasks(String userId, String filter) {
     List<TaskModel> userTasks = box.values
         .where((task) => task.userId == userId)
@@ -104,20 +132,23 @@ class TaskProvider extends ChangeNotifier {
 
     if (filter == "Pending") {
       return userTasks.where((task) => !task.isDone).toList();
-    } else if (filter == "Completed") {
+    }
+
+    if (filter == "Completed") {
       return userTasks.where((task) => task.isDone).toList();
     }
 
     return userTasks;
   }
 
-  // ============================
-  // 🕒 RECENT TASKS (OPTIONAL)
-  // ============================
-
+  // ===================================================
+  // 🕒 RECENT TASKS
+  // ===================================================
   List<TaskModel> get recentTasks {
     final list = box.values.toList();
+
     list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
     return list.take(5).toList();
   }
 }

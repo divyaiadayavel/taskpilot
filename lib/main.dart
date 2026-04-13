@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:hive/hive.dart';
 
 import 'core/theme/app_theme.dart';
 import 'data/services/hive_service.dart';
@@ -9,15 +10,18 @@ import 'providers/auth_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/task_provider.dart';
+import 'providers/activity_provider.dart';
 
 import 'ui/screens/auth/login_screen.dart';
-import 'providers/activity_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // 🔥 INIT HIVE
   await HiveService.init();
+
+  // 🔥 OPEN SETTINGS BOX
+  await Hive.openBox('settings');
 
   // 🔥 SEED DATA (runs only if empty)
   await SeedData.seedAll();
@@ -36,7 +40,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
-        ChangeNotifierProvider(create: (_) => ActivityProvider()), // ✅ ADD THIS
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

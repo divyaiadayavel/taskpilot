@@ -56,7 +56,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
     );
 
+    /// ✅ UPDATED DELETE USER + DELETE USER TASKS
     if (confirm == true) {
+      final taskProvider = Provider.of<TaskProvider>(context, listen: false);
+
+      taskProvider.deleteTasksByUser(user.id);
+
       userProvider.deleteUser(user);
     }
   }
@@ -321,10 +326,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             child: Text(safeName[0].toUpperCase()),
                           ),
                           title: Text(safeName),
-                          // subtitle: Text(user.email),
                           trailing: Text(user.role),
 
-                          /// ✅ CLICK USER → OPEN DETAILS SCREEN
+                          /// OPEN DETAILS
                           onTap: () {
                             Navigator.push(
                               context,
@@ -334,7 +338,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                             );
                           },
 
-                          /// ✅ LONG PRESS → DELETE POPUP
+                          /// LONG PRESS DELETE
                           onLongPress: () {
                             _showDeleteUserDialog(context, user, userProvider);
                           },
@@ -346,7 +350,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
                 AppSpacing.h20,
 
-                /// RECENT USER ACTIVITY
+                /// RECENT ACTIVITY
                 AppCard(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

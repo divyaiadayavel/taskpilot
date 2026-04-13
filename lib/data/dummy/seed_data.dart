@@ -31,8 +31,8 @@ class SeedData {
 
     final user1 = UserModel(
       id: _uuid.v4(),
-      name: "Sarah Green",
-      email: "sarah@mail.com",
+      name: "Vignesh",
+      email: "vicky2004@mail.com",
       password: "123456",
       role: "user",
       createdAt: DateTime.now(),
@@ -40,8 +40,8 @@ class SeedData {
 
     final user2 = UserModel(
       id: _uuid.v4(),
-      name: "Michael Turner",
-      email: "michael@mail.com",
+      name: "Naveen",
+      email: "naveemkumar@mail.com",
       password: "123456",
       role: "user",
       createdAt: DateTime.now(),

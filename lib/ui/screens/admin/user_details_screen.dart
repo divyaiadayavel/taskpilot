@@ -10,10 +10,38 @@ class UserDetailsScreen extends StatelessWidget {
 
   const UserDetailsScreen({super.key, required this.user});
 
+  /// 🗑 DELETE TASK POPUP
+  Future<void> _showDeleteTaskDialog(
+    BuildContext context,
+    dynamic task,
+    TaskProvider taskProvider,
+  ) async {
+    final confirm = await showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Delete Task"),
+        content: Text("Do you want to delete '${task.title}'?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      taskProvider.deleteTask(task, context);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final taskProvider = Provider.of<TaskProvider>(context);
-
     final activityProvider = Provider.of<ActivityProvider>(context);
 
     /// 🔥 USER TASKS
@@ -33,19 +61,93 @@ class UserDetailsScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
-            /// USER INFO
+            /// ================= USER INFO =================
             Card(
-              child: ListTile(
-                leading: CircleAvatar(child: Text(user.name[0].toUpperCase())),
-                title: Text(user.name),
-                subtitle: Text(user.email),
-                trailing: Text(user.role),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: CircleAvatar(
+                        child: Text(user.name[0].toUpperCase()),
+                      ),
+                      title: Text(user.name),
+                      subtitle: Text(user.email),
+                      trailing: Text(user.role),
+                    ),
+
+                    const Divider(),
+
+                    Row(
+                      children: [
+                        const Text(
+                          "Name: ",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(child: Text(user.name)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        const Text(
+                          "Email: ",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(child: Text(user.email)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        const Text(
+                          "Password: ",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(child: Text(user.password)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        const Text(
+                          "Role: ",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(child: Text(user.role)),
+                      ],
+                    ),
+
+                    const SizedBox(height: 6),
+
+                    Row(
+                      children: [
+                        const Text(
+                          "Created At: ",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(
+                          child: Text(
+                            "${user.createdAt.day}-${user.createdAt.month}-${user.createdAt.year}",
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 20),
 
-            /// TASK TITLE
+            /// ================= TASKS =================
             const Text(
               "Assigned Tasks",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -59,6 +161,10 @@ class UserDetailsScreen extends StatelessWidget {
               return Card(
                 margin: const EdgeInsets.only(bottom: 10),
                 child: ListTile(
+                  onLongPress: () {
+                    _showDeleteTaskDialog(context, task, taskProvider);
+                  },
+
                   leading: Icon(
                     task.isDone ? Icons.check_circle : Icons.pending,
                     color: task.isDone ? Colors.green : Colors.orange,
@@ -125,7 +231,7 @@ class UserDetailsScreen extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            /// HISTORY
+            /// ================= HISTORY =================
             const Text(
               "User Activity History",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
